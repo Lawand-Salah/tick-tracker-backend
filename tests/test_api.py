@@ -70,3 +70,15 @@ def test_refresh_when_down_and_empty_returns_502(temp_db, monkeypatch):
     with TestClient(app) as c:
         assert c.post("/admin/refresh").status_code == 502
         assert c.get("/sightings").json()["total"] == 0
+
+def test_by_city_report(api):
+    data = {d["key"]: d["count"] for d in api.get("/reports/by-city").json()}
+    assert data == {"London": 2, "Manchester": 2, "Leeds": 1}
+
+
+def test_trends_monthly_and_weekly(api):
+    m = api.get("/reports/trends", params={"period": "monthly"}).json()
+    assert {"period": "2022-03", "count": 2} in m["points"]
+    w = api.get("/reports/trends", params={"period": "weekly"}).json()
+    assert w["period_type"] == "weekly" and len(w["points"]) >= 3
+    assert api.get("/reports/trends", params={"period": "daily"}).status_code == 422

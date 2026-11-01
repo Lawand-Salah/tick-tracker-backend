@@ -64,6 +64,36 @@ def get_sighting(conn, sighting_id: str) -> Optional[Sighting]:
     row = conn.execute("SELECT * FROM sightings WHERE id = ?", (sighting_id,)).fetchone()
     return _row_to_sighting(row) if row else None
 
+def count_by(conn, column: str, **filters) -> list[tuple[str, int]]:
+    if column not in {"location", "species"}:  # column name can't be a parameter -> whitelist it
+        raise ValueError("invalid column")
+    where, params = _build_where(**filters)
+    rows = conn.execute(
+        f"SELECT {column} AS key, COUNT(*) AS n FROM sightings {where} "
+        f"GROUP BY {column} ORDER BY n DESC, key",
+        params,
+    ).fetchall()
+    return [(r["key"], r["n"]) for r in rows]
+
+
+def count_by_period(conn, period: str, **filters) -> list[tuple[str, int]]:
+    # strftime formats: monthly -> 2023-07 ; weekly -> 2023-W27 (week of year, Monday first)
+    fmt = {"monthly": "%Y-%m", "weekly": "%Y-W%W"}[period]
+    where, params = _build_where(**filters)
+    rows = conn.execute(
+        f"SELECT strftime('{fmt}', date) AS period, COUNT(*) AS n FROM sightings {where} "
+        f"GROUP BY period ORDER BY period",
+        params,
+    ).fetchall()
+    return [(r["period"], r["n"]) for r in rows]
+
+
+def count_by_month_of_year(conn) -> list[tuple[int, int]]:
+    rows = conn.execute(
+        "SELECT CAST(strftime('%m', date) AS INTEGER) AS m, COUNT(*) AS n "
+        "FROM sightings GROUP BY m ORDER BY m"
+    ).fetchall()
+    return [(r["m"], r["n"]) for r in rows]
 
 def log_ingestion(conn, started_at, status, fetched=0, accepted=0, rejected=0, message=None):
     conn.execute(

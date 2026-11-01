@@ -5,7 +5,7 @@ from fastapi import FastAPI
 
 from app.db import queries
 from app.db.database import db_session, init_db
-from app.routes import admin_routes, sightings_routes
+from app.routes import admin_routes, reports_routes, sightings_routes
 from app.services.ingestion_service import run_ingestion
 
 logger = logging.getLogger("tick-tracker")
@@ -30,6 +30,7 @@ app = FastAPI(
 )
 
 app.include_router(sightings_routes.router, prefix="/sightings", tags=["Sightings"])
+app.include_router(reports_routes.router, prefix="/reports", tags=["Reports"])
 app.include_router(admin_routes.router, prefix="/admin", tags=["Admin"])
 
 
