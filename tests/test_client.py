@@ -56,17 +56,4 @@ def test_timeout_is_retried_then_fails():
         raise httpx.ConnectTimeout("slow")
 
     with pytest.raises(ElancoAPIError, match="network error"):
-        fetch_all_sightings(make_client(handler))da req: httpx.Response(200, json=[{"id": "1"}]))
-    assert fetch_all_sightings(http) == [{"id": "1"}]
-
-
-def test_error_status_raises_clear_error():
-    http = make_client(lambda req: httpx.Response(500, json={"error": "boom"}))
-    with pytest.raises(ElancoAPIError):
-        fetch_all_sightings(http)
-
-
-def test_bad_json_shape_raises():
-    http = make_client(lambda req: httpx.Response(200, json={"not": "a list"}))
-    with pytest.raises(ElancoAPIError):
-        fetch_all_sightings(http)
+        fetch_all_sightings(make_client(handler))
