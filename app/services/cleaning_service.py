@@ -29,7 +29,9 @@ def clean_sightings(raw_records: list[dict], now: Optional[datetime] = None) -> 
     now = now or datetime.now()
     reasons: Counter = Counter()
     clean: list[Sighting] = []
-    duplicates = 0  # duplicate removal is added in the next commit
+    seen_ids: set[str] = set()
+    seen_events: set[tuple] = set()
+    duplicates = 0
     incomplete = 0
 
     for item in raw_records:
@@ -70,6 +72,13 @@ def clean_sightings(raw_records: list[dict], now: Optional[datetime] = None) -> 
             continue
 
         location = location.title()
+        event_key = (parsed.isoformat(), location.lower(), species.lower())
+        if rec_id in seen_ids or event_key in seen_events:
+            duplicates += 1
+            continue
+        seen_ids.add(rec_id)
+        seen_events.add(event_key)
+
         if latin is None:
             incomplete += 1
 
@@ -92,3 +101,10 @@ def clean_sightings(raw_records: list[dict], now: Optional[datetime] = None) -> 
         "rejection_reasons": dict(reasons),
     }
     return {"clean": clean, "stats": stats}
+
+
+def test_duplicates_by_id_and_by_event_removed():
+    records = [rec(id="1"), rec(id="1"), rec(id="2")]  # id dup, then same event as "1"
+    out = clean_sightings(records, now=NOW)
+    assert out["stats"]["accepted"] == 1
+    assert out["stats"]["duplicates_removed"] == 2
