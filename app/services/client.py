@@ -1,6 +1,5 @@
 from app.config import API_TIMEOUT_SECONDS, EXTERNAL_API_URL
-from fastapi import FastAPI
-requests = FastAPI()
+requests = EXTERNAL_API_URL
 
 
 def get_external_data():
